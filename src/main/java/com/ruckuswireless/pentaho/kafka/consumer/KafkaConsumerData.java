@@ -1,8 +1,8 @@
 package com.ruckuswireless.pentaho.kafka.consumer;
 
-import kafka.consumer.ConsumerIterator;
-import kafka.javaapi.consumer.ConsumerConnector;
-
+import java.util.Iterator;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
@@ -14,8 +14,8 @@ import org.pentaho.di.trans.step.StepDataInterface;
  */
 public class KafkaConsumerData extends BaseStepData implements StepDataInterface {
 
-	ConsumerConnector consumer;
-	ConsumerIterator<byte[], byte[]> streamIterator;
+	KafkaConsumer<String,String> consumer;
+	Iterator<ConsumerRecord<String, String>> streamIterator;
 	RowMetaInterface outputRowMeta;
 	RowMetaInterface inputRowMeta;
 	boolean canceled;

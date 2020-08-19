@@ -19,21 +19,20 @@
 			<directory>target/lib</directory>
 			<outputDirectory>lib</outputDirectory>
 			<includes>
-				<include>jline-0.9.94.jar</include>
-				<include>jopt-simple-3.2.jar</include>
-				<include>junit-3.8.1.jar</include>
-				<include>kafka_2.10-0.8.2.2.jar</include>
-				<include>kafka-clients-0.8.2.2.jar</include>
-				<include>log4j-1.2.17.jar</include>
-				<include>lz4-1.2.0.jar</include>
+				<include>kafka-clients-1.1.0.jar</include>
+				<include>kafka_2.11-1.1.0.jar</include>
+				<include>lz4-java-1.4.jar</include>
 				<include>metrics-core-2.2.0.jar</include>
-				<include>netty-3.7.0.Final.jar</include>
-				<include>scala-library-2.10.4.jar</include>
-				<include>slf4j-api-1.7.2.jar</include>
-				<include>slf4j-log4j12-1.6.1.jar</include>
-				<include>snappy-java-1.1.1.6.jar</include>
-				<include>zkclient-0.3.jar</include>
-				<include>zookeeper-3.4.6.jar</include>
+				<include>scala-library-2.11.12.jar</include>
+				<include>scala-logging_2.11-3.7.2.jar</include>
+				<include>scala-reflect-2.11.12.jar</include>
+				<include>log4j-1.2.17.jar</include>
+				<include>slf4j-api-1.7.25.jar</include>
+				<include>slf4j-log4j12-1.7.25.jar</include>
+				<include>velocity-1.7.jar</include>
+				<include>zkclient-0.10.jar</include>
+				<include>zookeeper-3.5.1.jar</include>
+				<include>commons-lang-2.4.jar</include>
 			</includes>
 		</fileSet>
 		<fileSet>

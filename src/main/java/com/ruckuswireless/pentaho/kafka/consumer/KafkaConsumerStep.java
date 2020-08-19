@@ -1,6 +1,9 @@
 package com.ruckuswireless.pentaho.kafka.consumer;
 
+import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,6 +14,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.security.auth.login.Configuration;
+import org.apache.commons.lang.StringUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
@@ -62,15 +73,54 @@ public class KafkaConsumerStep extends BaseStep implements StepInterface {
 			}
 		}
 		ConsumerConfig consumerConfig = new ConsumerConfig(substProperties);
-
 		logBasic(Messages.getString("KafkaConsumerStep.CreateKafkaConsumer.Message", consumerConfig.zkConnect()));
-		data.consumer = Consumer.createJavaConsumerConnector(consumerConfig);
-		Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
+		substProperties.put("zookeeper.connect", consumerConfig.zkConnect());
+		substProperties.put("group.id", consumerConfig.groupId());
+		substProperties.setProperty("client.id",consumerConfig.clientId());
+		substProperties.setProperty("zookeeper.session.timeout.ms",String.valueOf(consumerConfig.zkSessionTimeoutMs()));
+		substProperties.setProperty("zookeeper.sync.time.ms",String.valueOf(consumerConfig.zkSyncTimeMs()));
+		substProperties.setProperty("auto.commit.interval.ms",String.valueOf(consumerConfig.autoCommitIntervalMs()));
+		substProperties.setProperty("enable.auto.commit",substProperties.getProperty("auto.commit.enable"));
+		// kerberos
+		String isSecurity = substProperties.getProperty("isSecureMode");
+		if("true".equalsIgnoreCase(isSecurity)){
+			if(StringUtils.isBlank(substProperties.getProperty("security.protocol"))){
+				substProperties.setProperty("security.protocol","SASL_PLAINTEXT");
+			}
+			if(StringUtils.isBlank(substProperties.getProperty("sasl.kerberos.service.name"))){
+				substProperties.setProperty("sasl.kerberos.service.name","kafka");
+			}
+			if(StringUtils.isBlank(substProperties.getProperty("kerberos.domain.name"))){
+				substProperties.setProperty("kerberos.domain.name","hadoop.hadoop.com");
+			}
+			if(StringUtils.isBlank(substProperties.getProperty("key.deserializer"))){
+				substProperties.setProperty("key.deserializer", StringDeserializer.class.getName());
+			}
+			if(StringUtils.isBlank(substProperties.getProperty("value.deserializer"))){
+				substProperties.setProperty("value.deserializer", StringDeserializer.class.getName());
+			}
+			System.setProperty("zookeeper.server.principal", substProperties.getProperty("zookeeper.server.principal"));
+			String confPath = System.getProperty("user.dir") + File.separator + "conf" + File.separator;
+			String krb5Conf = confPath + "krb5.conf";
+			System.setProperty("java.security.krb5.conf", krb5Conf);
+			// 华为新 客户端不使用zk
+			substProperties.remove("zookeeper.connect");
+			substProperties.setProperty("session.timeout.ms","30000");
+		}else {
+			substProperties.remove("bootstrap.servers");
+		}
+		Thread.currentThread().setContextClassLoader(null);
+		logBasic("此客户端配置的kerberos krb5.conf 配置：" + System.getProperty("java.security.krb5.conf"));
+		logBasic("此客户端配置的kerberos jaas.conf 配置：" + System.getProperty("java.security.auth.login.config"));
+		Configuration.setConfiguration(null);
+		data.consumer = new KafkaConsumer<String, String>(substProperties);
 		String topic = environmentSubstitute(meta.getTopic());
-		topicCountMap.put(topic, 1);
-		Map<String, List<KafkaStream<byte[], byte[]>>> streamsMap = data.consumer.createMessageStreams(topicCountMap);
-		logDebug("Received streams map: " + streamsMap);
-		data.streamIterator = streamsMap.get(topic).get(0).iterator();
+		// 订阅
+		data.consumer.subscribe(Collections.singletonList(topic));
+		// 消息消费请求
+		ConsumerRecords<String, String> records = data.consumer.poll(1000);
+		logDebug("Received streams map: " + records);
+		data.streamIterator = records.iterator();
 
 		return true;
 	}
@@ -78,7 +128,7 @@ public class KafkaConsumerStep extends BaseStep implements StepInterface {
 	public void dispose(StepMetaInterface smi, StepDataInterface sdi) {
 		KafkaConsumerData data = (KafkaConsumerData) sdi;
 		if (data.consumer != null) {
-			data.consumer.shutdown();
+			data.consumer.close();
 		}
 		super.dispose(smi, sdi);
 	}
@@ -131,7 +181,7 @@ public class KafkaConsumerStep extends BaseStep implements StepInterface {
 			logDebug("Starting message consumption with overall timeout of " + timeout + "ms");
 
 			KafkaConsumerCallable kafkaConsumer = new KafkaConsumerCallable(meta, data, this) {
-				protected void messageReceived(byte[] key, byte[] message) throws KettleException {
+				protected void messageReceived(String key, String message) throws KettleException {
 					Object[] newRow = RowDataUtil.addRowData(inputRow.clone(), data.inputRowMeta.size(),
 							new Object[] { message, key });
 					putRow(data.outputRowMeta, newRow);
@@ -176,7 +226,7 @@ public class KafkaConsumerStep extends BaseStep implements StepInterface {
 	public void stopRunning(StepMetaInterface smi, StepDataInterface sdi) throws KettleException {
 
 		KafkaConsumerData data = (KafkaConsumerData) sdi;
-		data.consumer.shutdown();
+		data.consumer.close();
 		data.canceled = true;
 
 		super.stopRunning(smi, sdi);

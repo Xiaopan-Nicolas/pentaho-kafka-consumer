@@ -46,11 +46,20 @@ public class KafkaConsumerMeta extends BaseStepMeta implements StepMetaInterface
 			"queued.max.message.chunks", "rebalance.max.retries", "fetch.min.bytes", "fetch.wait.max.ms",
 			"rebalance.backoff.ms", "refresh.leader.backoff.ms", "auto.commit.enable", "auto.offset.reset",
 			"consumer.timeout.ms", "client.id", "zookeeper.session.timeout.ms", "zookeeper.connection.timeout.ms",
-			"zookeeper.sync.time.ms" };
+			"zookeeper.sync.time.ms","isSecureMode","bootstrap.servers",
+			"security.protocol","sasl.kerberos.service.name","kerberos.domain.name","zookeeper.server.principal"
+	};
 	public static final Map<String, String> KAFKA_PROPERTIES_DEFAULTS = new HashMap<String, String>();
 	static {
 		KAFKA_PROPERTIES_DEFAULTS.put("zookeeper.connect", "localhost:2181");
 		KAFKA_PROPERTIES_DEFAULTS.put("group.id", "group");
+		KAFKA_PROPERTIES_DEFAULTS.put("isSecureMode", "false");
+		KAFKA_PROPERTIES_DEFAULTS.put("bootstrap.servers", "localhost:21007");
+		KAFKA_PROPERTIES_DEFAULTS.put("zookeeper.server.principal", "zookeeper/hadoop.hadoop.com");
+		KAFKA_PROPERTIES_DEFAULTS.put("security.protocol", "SASL_PLAINTEXT");
+		KAFKA_PROPERTIES_DEFAULTS.put("sasl.kerberos.service.name", "kafka");
+		KAFKA_PROPERTIES_DEFAULTS.put("kerberos.domain.name", "hadoop.hadoop.com");
+		KAFKA_PROPERTIES_DEFAULTS.put("auto.commit.enable", "true");
 	}
 
 	private Properties kafkaProperties = new Properties();
