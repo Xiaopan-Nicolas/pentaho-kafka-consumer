@@ -117,11 +117,6 @@ public class KafkaConsumerStep extends BaseStep implements StepInterface {
 		String topic = environmentSubstitute(meta.getTopic());
 		// 订阅
 		data.consumer.subscribe(Collections.singletonList(topic));
-		// 消息消费请求
-		ConsumerRecords<String, String> records = data.consumer.poll(1000);
-		logDebug("Received streams map: " + records);
-		data.streamIterator = records.iterator();
-
 		return true;
 	}
 
